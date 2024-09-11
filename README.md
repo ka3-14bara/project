@@ -239,7 +239,246 @@ ssh -J bastion@51.250.19.231 admin@web1.ru-central1.internal
 
 ### Развертывание приожений на серверах <a name="Развертывание"></a>
 
-Развертывание происходило при помощи ansible, который был установлен на bastion host.
+Развертывание происходило при помощи ansible, который был установлен на bastion host. Этот файл также лежит в этой ветке.
 
+Продублирую код здесь:
+```
+---
+
+- name: configurate frontend servers
+  hosts: Sites_group
+  become: yes
+  vars:
+    beats_gpg: 'https://artifacts.elastic.co/GPG-KEY-elasticsearch'
+
+  tasks:
+  - name: update apt 
+    apt:
+      update_cache: yes
+      upgrade: yes
+  - name: search and istall nginx
+    apt:
+      name: nginx
+      state: present
+  - name: start application
+    systemd: 
+      name: nginx
+      state: started
+  - name: add nginx to autoload
+    systemd: 
+      name: nginx
+      enabled: yes
+  
+
+  - name: install gnupg
+    apt:
+      name: gnupg
+      state: present
+  - name: install apt-transport-https
+    apt:
+      name: apt-transport-https
+      state: present
+  - name: get GPG
+    ansible.builtin.shell:
+      cmd: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/elastic-7.x.gpg --import
+  - name: add gpg
+    ansible.builtin.shell:
+      cmd: sudo chmod 644 /etc/apt/trusted.gpg.d/elastic-7.x.gpg
+  - name: Add Beats apt repository.
+    ansible.builtin.shell:
+      cmd: echo "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/7/ stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+  - name: update apt 
+    apt:
+      update_cache: yes 
+  - name: install filebeat
+    apt:
+      name: filebeat
+      state: present
+  - name: add filebeat to autoload
+    systemd: 
+      name: filebeat
+      enabled: yes
+
+- name: installing zabbix agent 
+  hosts: Sites_group
+  become: yes
+  tasks:
+  - name: search and istall zabbix-agent
+    apt:
+      name: zabbix-agent
+      state: present
+  - name: start application
+    systemd: 
+      name: zabbix-agent
+      state: started
+  - name: add to autoload
+    systemd: 
+      name: zabbix-agent
+      enabled: yes
+
+- name: configurate zabbix server 
+  hosts: Zabbix_group
+  become: yes
+  vars:
+    get_zabbix_pkg: 'https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-2+ubuntu22.04_all.deb'
+    zabbix_pkg: 'zabbix-release_7.0-2+ubuntu22.04_all.deb'
+  tasks:
+
+  - name: update apt 
+    apt:
+      update_cache: yes
+      upgrade: yes
+
+  - name: search and istall postgresql
+    apt:
+      name: postgresql
+      state: present
+  - name: start application
+    systemd: 
+      name: postgresql
+      state: started
+  - name: add to autoload
+    systemd: 
+      name: postgresql
+      enabled: yes
+
+  - name: getting zabbix pkg
+    ansible.builtin.shell:
+      cmd: wget "{{ get_zabbix_pkg }}"
+  - name: building zabbix pkg
+    ansible.builtin.shell:
+      cmd: dpkg -i "{{ zabbix_pkg }}"
+
+
+  - name: update apt 
+    apt:
+      update_cache: yes
+
+  - name: downloading zabbix-server-pgsql
+    apt:
+      name: zabbix-server-pgsql
+      state: present
+
+  - name: downloading zabbix-frontend-php
+    apt:
+      name: zabbix-frontend-php
+      state: present
+
+  - name: downloading php8.1-pgsql
+    apt:
+      name: php8.1-pgsql
+      state: present
+
+  - name: downloading zabbix-apache-conf
+    apt:
+      name: zabbix-apache-conf
+      state: present
+
+  - name: downloading zabbix-sql-scripts
+    apt:
+      name: zabbix-sql-scripts
+      state: present
+
+  - name: downloading zabbix-agent
+    apt:
+      name: zabbix-agent
+      state: present
+
+- name: configurate elk machine
+  hosts: ELK_group
+  become: yes
+  vars:
+    beats_gpg: 'https://artifacts.elastic.co/GPG-KEY-elasticsearch'
+
+  tasks:
+
+  - name: update apt 
+    apt:
+      update_cache: yes
+      upgrade: yes
+  - name: install gnupg
+    apt:
+      name: gnupg
+      state: present
+  - name: install apt-transport-https
+    apt:
+      name: apt-transport-https
+      state: present
+  - name: get GPG
+    ansible.builtin.shell:
+      cmd: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/elastic-7.x.gpg --import
+  - name: add gpg
+    ansible.builtin.shell:
+      cmd: sudo chmod 644 /etc/apt/trusted.gpg.d/elastic-7.x.gpg
+  - name: Add elk apt repository.
+    ansible.builtin.shell:
+      cmd: echo "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/7/ stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+  - name: update apt 
+    apt:
+      update_cache: yes 
+  - name: install elasticsearch
+    apt:
+      name: elasticsearch
+      state: present
+  - name: update systemd configs
+    ansible.builtin.shell:
+      cmd: systemctl daemon-reload
+  - name: enable unit
+    ansible.builtin.shell:
+      cmd: systemctl enable elasticsearch.service
+  - name: start unit
+    ansible.builtin.shell:
+      cmd: systemctl start elasticsearch.service
+
+- name: configurate kibana machine
+  hosts: Kibana_group
+  become: yes
+  vars:
+    beats_gpg: 'https://artifacts.elastic.co/GPG-KEY-elasticsearch'
+
+  tasks:
+
+  - name: update apt 
+    apt:
+      update_cache: yes
+      upgrade: yes
+  - name: install gnupg
+    apt:
+      name: gnupg
+      state: present
+  - name: install apt-transport-https
+    apt:
+      name: apt-transport-https
+      state: present
+  - name: get GPG
+    ansible.builtin.shell:
+      cmd: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/elastic-7.x.gpg --import
+  - name: add gpg
+    ansible.builtin.shell:
+      cmd: sudo chmod 644 /etc/apt/trusted.gpg.d/elastic-7.x.gpg
+  - name: Add Beats apt repository.
+    ansible.builtin.shell:
+      cmd: echo "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/7/ stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
+  - name: update apt 
+    apt:
+      update_cache: yes 
+  - name: update apt 
+    apt:
+      update_cache: yes
+      upgrade: yes
+  - name: install kibana
+    apt:
+      name: kibana
+      state: present
+  - name: update systemd configs
+    ansible.builtin.shell:
+      cmd: systemctl daemon-reload
+  - name: enable unit
+    ansible.builtin.shell:
+      cmd: systemctl enable kibana.service
+  - name: start unit
+    ansible.builtin.shell:
+      cmd: systemctl start kibana.service
+```
 
 ---
