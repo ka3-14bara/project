@@ -1,117 +1,245 @@
-# Домашнее задание к занятию "`Название занятия`" - `Фамилия и имя студента`
+# Разработка инфраструктуры для сайта, включающую мониторинг, сбор логов и резервное копирование основных данных - `Латыпов Данияр`
 
+## Содержание
+* [Сайт](#Сайт)
+* [Мониторинг](#Мониторинг)
+* [Логи](#Логи)
+* [Сеть](#Сеть)
+* [Резервное-копирование](#Резервное-копирование)
+* [Развертывание ПО](#развертывание-приожений-на-серверах)
 
-### Инструкция по выполнению домашнего задания
+### Сайт <a name="Сайт"></a>
 
-   1. Сделайте `fork` данного репозитория к себе в Github и переименуйте его по названию или номеру занятия, например, https://github.com/имя-вашего-репозитория/git-hw или  https://github.com/имя-вашего-репозитория/7-1-ansible-hw).
-   2. Выполните клонирование данного репозитория к себе на ПК с помощью команды `git clone`.
-   3. Выполните домашнее задание и заполните у себя локально этот файл README.md:
-      - впишите вверху название занятия и вашу фамилию и имя
-      - в каждом задании добавьте решение в требуемом виде (текст/код/скриншоты/ссылка)
-      - для корректного добавления скриншотов воспользуйтесь [инструкцией "Как вставить скриншот в шаблон с решением](https://github.com/netology-code/sys-pattern-homework/blob/main/screen-instruction.md)
-      - при оформлении используйте возможности языка разметки md (коротко об этом можно посмотреть в [инструкции  по MarkDown](https://github.com/netology-code/sys-pattern-homework/blob/main/md-instruction.md))
-   4. После завершения работы над домашним заданием сделайте коммит (`git commit -m "comment"`) и отправьте его на Github (`git push origin`);
-   5. Для проверки домашнего задания преподавателем в личном кабинете прикрепите и отправьте ссылку на решение в виде md-файла в вашем Github.
-   6. Любые вопросы по выполнению заданий спрашивайте в чате учебной группы и/или в разделе “Вопросы по заданию” в личном кабинете.
-   
-Желаем успехов в выполнении домашнего задания!
-   
-### Дополнительные материалы, которые могут быть полезны для выполнения задания
+Две виртуаьные машины созданы в различных зонах для достижения распределённости и отказоустойчивости:
 
-1. [Руководство по оформлению Markdown файлов](https://gist.github.com/Jekins/2bf2d0638163f1294637#Code)
+* ru-central1-a
+* ru-central1-b
+
+На вебсервера установлено следующее ПО:
+
+* NGINX в качестве вебсервера
+* Filebeat для сбора и передачи логов в elasticsearch
+* Zabbix-agent для сбора и отправки метрик на zabbix-server
+
+Виртуальные машины не обладают внешним IP для уменьшения площади атаки извне. Для доступа к вебсерверам используется бастион хост, находящийся во внешнем контуре сети. Доступ к веб-порту обеспечивается через балансировщик yamdex cloud, который одновременно занимается и балансировкой трафика не вебсервера.
+
+Настройки балансировщика:
+
+1. Созданы целевые ресурсы:
+   <img src = "img/ya-cloud/ya-load_balance-target_groups.png" width = 100%>
+2. Создана группа бекенда:
+   <img src = "img/ya-cloud/ya-load_balance-backend_groups.png" width = 100%>
+3. Создан HTTP роутер:
+   <img src = "img/ya-cloud/ya-load_balance-http_router.png" width = 100%>
+4. Создан балансировщик и listener:
+   <img src = "img/ya-cloud/ya-load_balance-balancer.png" width = 100%>
+
+Карта балансировки выглядит следующим образом:
+
+   <img src = "img/ya-cloud/ya-load_balance-balance_map.png" width = 100%>
+
+Сайт доступен по следующей ссылке:
+   http://51.250.39.49:80
+
+<img src = "img/webpage-serv1.png" width = 100%>
+<img src = "img/webpage-serv2.png" width = 100%>
+
+Конфигурационный файл filebeat:
+```
+filebeat.inputs:
+  - type: log
+    enabled: true
+
+    paths:
+      - /var/log/nginx/access.log
+
+  - type: log
+    enabled: true
+
+    paths:
+      - /var/log/nginx/error.log
+
+output.elasticsearch:
+  hosts: ["10.120.0.23:9200"]
+  protocol: http
+  index: "WEBS-%{+yyyy.MM.dd}"
+  username: "elastic"
+  password: "elastic"
+
+setup.kibana:
+  host: ["10.122.0.30:5601"]
+
+setup.ilm.enabled: false
+
+setup.template.name: "filebeat"
+setup.template.pattern: "filebeat"
+setup.template.settings:
+  index.number_of_shards: 1
+```
 
 ---
 
-### Задание 1
+### Мониторинг <a name="Мониторинг"></a>
 
-`Приведите ответ в свободной форме........`
+Мониторинг осуществляется при помощи Zabbix. Для zabbix-server создана отдельная виртуальная машина, находящаяся во внешнем контуре сети. На данную машину отправляются метрики с хостов вебсерверов.
 
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
-
+Конфигурационный файл zabbix-server:
 ```
-Поле для вставки кода...
-....
-....
-....
-....
+LogFile=/var/log/zabbix/zabbix_server.log
+
+LogFileSize=0
+
+PidFile=/run/zabbix/zabbix_server.pid
+
+SocketDir=/run/zabbix
+
+DBName=zabbix
+
+DBUser=zabbix
+
+DBPassword=changed_password
+
+SNMPTrapperFile=/var/log/snmptrap/snmptrap.log
+
+Timeout=4
+
+FpingLocation=/usr/bin/fping
+
+Fping6Location=/usr/bin/fping6
+
+LogSlowQueries=3000
+
+StatsAllowedIP=127.0.0.1
+
+EnableGlobalScripts=0
 ```
 
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота 1](ссылка на скриншот 1)`
+Для сбора метрик настроены хосты в веб интерфейсе: 
+   <img src = "img/zabbix/zabbix-monitoring-hosts.png" width = 100%>
 
+Созданы следующие дашборды:
+1. Главная страница с основной информацией:
+   <img src = "img/zabbix/zabbix-dashboard-main.png" width = 100%>
+2. Страница с информацией о дисковых системах:
+   <img src = "img/zabbix/zabbix-dashboard-disks1.png" width = 100%>
+   <img src = "img/zabbix/zabbix-dashboard-disks2.png" width = 100%>
+3. Страница с информацией о сети:
+   <img src = "img/zabbix/zabbix-dashboard-network1.png" width = 100%>
+4. Страница с информацией об ОЗУ:
+   <img src = "img/zabbix/zabbix-dashboard-ram.png" width = 100%>
+5. Страница с информацией о ЦПУ:
+   <img src = "img/zabbix/zabbix-dashboard-cpu.png" width = 100%>
 
 ---
 
-### Задание 2
+### Логи <a name="Логи"></a>
 
-`Приведите ответ в свободной форме........`
+Сбор логов осушествляется в 3 этапа:
+1. Сбор логов на хостах.
+2. Отправка логов на сервер elasticsearch.
+3. Обработка логов на сервере elasticsearch.
 
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
+Далее для визуализации данных сервер Kibana запрашивает и получает данные с сервера elasticsearch. Для визуализации данных необходимо:
+1. Создать шаблон считываемых индексов:
+   <img src = "img/kibana/kibana-index_pattern.png" width = 100%>
+   1.1 Под этот шаблон подпадают следующие индексы:
+   <img src = "img/kibana/kibana-index_managment.png" width = 100%>
+2. Далее необходимо проанализировать какие поля присутствуют в логах:
+   <img src = "img/kibana/kibana-index_pattern-index_fields.png" width = 100%>
+3. На основании полей построить дашборд:
+   <img src = "img/kibana/kibana-dashboard.png" width = 100%>
+
+В дашборде присутствует диаграмма, в которой показывается разделение логов по типу лога и по типу хоста. А также диаграмма кривой количества запросов к каждой машине ко времени.
+
+Конфигурационный файл elasticsearch:
+```
+cluster.name: websites
+
+path.data: /var/lib/elasticsearch
+
+path.logs: /var/log/elasticsearch
+
+network.host: 0.0.0.0
+
+discovery.type: single-node
+
+xpack.security.enabled: true
+xpack.license.self_generated.type: basic
 
 ```
-Поле для вставки кода...
-....
-....
-....
-....
+
+Конфигурационный файл kibana:
 ```
+server.name: "kibana"
+server.host: 10.122.0.30
+server.port: 5601
+server.publicBaseUrl: "http://84.201.178.82:5601"
 
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота 2](ссылка на скриншот 2)`
+elasticsearch.hosts: 
+  - http://10.120.0.23:9200
 
+elasticsearch.username: "elastic"
+elasticsearch.password: "elastic"
+
+logging.dest: /var/log/kibana/kibana.log
+
+```
 
 ---
 
-### Задание 3
+### Сеть <a name="Сеть"></a>
 
-`Приведите ответ в свободной форме........`
+Принципиальная схема взаимодействия хостов в сети:
+<img src = "img/net-structure-global.png" width = 100%>
 
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
+Хосты web1, web2, elasticsearch не имеют прямого доступа к внешней сети. Все общение происходит через сервера посредники - bastion (NAT gateway) и балансировщик. Для этого бы настроен gateway через bastion host и таблица маршрутизации:
+   <img src = "img/ya-cloud/ya-vpc-gateway.png" width = 100%>
+   <img src = "img/ya-cloud/ya-vpc-routes.png" width = 100%>
 
+Подключение к хостам по ssh происходит через бастион в качестве jump сервера и используется fqdn имена виртуальных машин в зоне:
 ```
-Поле для вставки кода...
-....
-....
-....
-....
+ssh -J bastion@51.250.19.231 admin@web1.ru-central1.internal
 ```
+Схема сети VPC в yandex cloud:
+   <img src = "img/ya-cloud/ya-vpc-structure.png" width = 100%>
 
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
+Подсети VPC в yandex cloud:
+   <img src = "img/ya-cloud/ya-vpc-subnets.png" width = 100%>
 
-### Задание 4
+Также были настроены различные группы безопасности предоставляющие доступ только к необходимым портам: 
+   <img src = "img/ya-cloud/ya-vpc-security_groups.png" width = 100%>
 
-`Приведите ответ в свободной форме........`
+Подробнее о каждой группе:
+1. Elastic
+   <img src = "img/ya-cloud/ya-vpc-security_groups-elastic.png" width = 100%>
+2. For_web
+   <img src = "img/ya-cloud/ya-vpc-security_groups-for_web.png" width = 100%>
+3. http
+   <img src = "img/ya-cloud/ya-vpc-security_groups-http.png" width = 100%>
+4. kibana
+   <img src = "img/ya-cloud/ya-vpc-security_groups-kibana.png" width = 100%>
+5. ssh
+   <img src = "img/ya-cloud/ya-vpc-security_groups-ssh.png" width = 100%>
+6. zabbix
+   <img src = "img/ya-cloud/ya-vpc-security_groups-zabbix.png" width = 100%>
 
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
+---
 
-```
-Поле для вставки кода...
-....
-....
-....
-....
-```
+### Резервное копирование <a name="Резервное-копирование"></a>
 
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
+Резервное копирование производилось встроенным инструментом yandex backup cloud.
+
+Была настроена политика бэкапов:
+   <img src = "img/ya-cloud/ya-backup-backup_politics.png" width = 100%>
+
+В качестве вида бэкапов выбраны инкрементные бэкапы. После этого все виртуальные машины были подкючены к этой политике резервного копирования, после чего был снят первый (полный) бэкап:
+   <img src = "img/ya-cloud/ya-backup-backups.png" width = 100%>
+
+---
+
+### Развертывание приожений на серверах <a name="Развертывание"></a>
+
+Развертывание происходило при помощи ansible, который был установлен на bastion host.
+
+
+---
