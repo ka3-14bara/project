@@ -64,7 +64,7 @@ output.elasticsearch:
   protocol: http
   index: "WEBS-%{+yyyy.MM.dd}"
   username: "elastic"
-  password: "elastic"
+  password: "changed_password"
 
 setup.kibana:
   host: ["10.122.0.30:5601"]
@@ -179,7 +179,7 @@ elasticsearch.hosts:
   - http://10.120.0.23:9200
 
 elasticsearch.username: "elastic"
-elasticsearch.password: "elastic"
+elasticsearch.password: "changed_password"
 
 logging.dest: /var/log/kibana/kibana.log
 
