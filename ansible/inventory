@@ -1,9 +1,9 @@
 [Sites_group]
-web1.ru-central1.internal
-web2.ru-central1.internal
+web1.ru-central1.internal ansible_user=admin
+web2.ru-central1.internal ansible_user=admin
 [Zabbix_group]
-zabbix.ru-central1.internal
+zabbix.ru-central1.internal ansible_user=admin
 [ELK_group]
-elasticsearch.ru-central1.internal
+elasticsearch.ru-central1.internal ansible_user=admin
 [Kibana_group]
-kibana.ru-central1.internal
+kibana.ru-central1.internal ansible_user=admin
