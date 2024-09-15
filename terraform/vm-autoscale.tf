@@ -237,7 +237,6 @@ resource "yandex_compute_instance" "web1" {
       yandex_vpc_subnet.private-net-b.id
     ]
     security_group_ids = [ yandex_vpc_security_group.slf.id, yandex_vpc_security_group.ssh.id, yandex_vpc_security_group.http.id, yandex_vpc_security_group.wb.id ]
-    nat                = true
   }
 
   metadata = {
@@ -272,7 +271,6 @@ resource "yandex_compute_instance" "kibana" {
       yandex_vpc_subnet.public-net-b.id
     ]
     security_group_ids = [ yandex_vpc_security_group.slf.id, yandex_vpc_security_group.ssh.id, yandex_vpc_security_group.kbn.id ]
-    nat                = true
   }
 
   metadata = {
@@ -307,7 +305,6 @@ resource "yandex_compute_instance" "zabbix" {
       yandex_vpc_subnet.public-net-b.id
     ]
     security_group_ids = [ yandex_vpc_security_group.slf.id, yandex_vpc_security_group.ssh.id, yandex_vpc_security_group.http.id, yandex_vpc_security_group.zbx.id ]
-    nat                = true
   }
 
   metadata = {
@@ -342,7 +339,6 @@ resource "yandex_compute_instance" "bastion-host" {
       yandex_vpc_subnet.public-net-b.id
     ]
     security_group_ids = [ yandex_vpc_security_group.slf.id, yandex_vpc_security_group.ssh.id ]
-    nat                = true
   }
 
   metadata = {
@@ -377,7 +373,6 @@ resource "yandex_compute_instance" "elasticsearch" {
       yandex_vpc_subnet.private-net-b.id
     ]
     security_group_ids = [ yandex_vpc_security_group.slf.id, yandex_vpc_security_group.ssh.id, yandex_vpc_security_group.els.id ]
-    nat                = true
   }
 
   metadata = {
@@ -412,7 +407,6 @@ resource "yandex_compute_instance" "web2" {
       yandex_vpc_subnet.private-net-a.id
     ]
     security_group_ids = [ yandex_vpc_security_group.slf.id, yandex_vpc_security_group.ssh.id, yandex_vpc_security_group.http.id, yandex_vpc_security_group.wb.id ]
-    nat                = true
   }
 
   metadata = {
