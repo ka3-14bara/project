@@ -38,9 +38,6 @@
 
    <img src = "img/ya-cloud/ya-load_balance-balance_map.png" width = 100%>
 
-Сайт доступен по следующей ссылке:
-   http://51.250.39.49:80
-
 <img src = "img/webpage-serv1.png" width = 100%>
 <img src = "img/webpage-serv2.png" width = 100%>
 
