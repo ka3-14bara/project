@@ -8,7 +8,11 @@
 * [Резервное-копирование](#Резервное-копирование)
 * [Развертывание ВМ и ПО](#развертывание-приожений-на-серверах)
 
+
+
 ### Сайт <a name="Сайт"></a>
+
+<video src = "img/video/1.mp4" width = 75%>
 
 Две виртуаьные машины созданы в различных зонах для достижения распределённости и отказоустойчивости:
 
@@ -239,5 +243,15 @@ ssh -J bastion@51.250.19.231 admin@web1.ru-central1.internal
 Развертывание приложений происходило при помощи terraform и API yandex cloud. Этот файл также лежит в этой ветке.
 
 Развертывание приложений происходило при помощи ansible, который был установлен на bastion host. Этот файл также лежит в этой ветке.
+
+<img src = "img/ansible/ansible1.png" width = 100%>
+
+<img src = "img/ansible/ansible2.png" width = 100%>
+
+<img src = "img/ansible/ansible3.png" width = 100%>
+
+<img src = "img/ansible/ansible4.png" width = 100%>
+
+<img src = "img/ansible/ansible5.png" width = 100%>
 
 ---
